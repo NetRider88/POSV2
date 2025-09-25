@@ -149,9 +149,9 @@ export function ApiSimulator() {
                 {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
+            <div className="text-xs text-muted-foreground mt-2">
               This endpoint only accepts <Badge variant="secondary">POST</Badge> requests. The endpoint is valid for your current session.
-            </p>
+            </div>
           </div>
 
           <div className="space-y-4">
