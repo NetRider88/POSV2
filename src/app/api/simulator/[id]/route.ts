@@ -3,6 +3,8 @@
 // In a real-world application, you would use a more robust solution for handling webhooks,
 // potentially involving a message queue or a dedicated service.
 
+import { validateRequest, ValidationResult } from '@/lib/talabat-api-schemas';
+
 // A simple in-memory store for clients.
 // In a real app, you'd use a database or a pub/sub system.
 const clients = new Map<string, Response[]>();
@@ -59,7 +61,7 @@ export async function GET(
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
+          Connection: 'keep-alive',
         },
       });
       // A bit of a hack to attach the controller to the response
@@ -74,12 +76,12 @@ export async function GET(
       });
     },
   });
-  
+
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
     },
   });
 }
@@ -89,7 +91,21 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
-  const body = await request.json();
+  let body: any;
+  let validationResult: ValidationResult;
+
+  try {
+    body = await request.json();
+    validationResult = validateRequest(body);
+  } catch (e) {
+    body = { error: "Invalid JSON in request body" };
+    validationResult = {
+      isValid: false,
+      requestType: 'Unknown',
+      errors: ['Request body is not a valid JSON.'],
+    };
+  }
+
   const headers: Record<string, string> = {};
   request.headers.forEach((value, key) => {
     headers[key] = value;
@@ -100,12 +116,16 @@ export async function POST(
     headers,
     body,
     timestamp: new Date().toISOString(),
+    validation: validationResult,
   };
 
   sendEvent(id, requestData);
 
-  return new Response(JSON.stringify({ success: true, message: 'Request received' }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return new Response(
+    JSON.stringify({ success: true, message: 'Request received' }),
+    {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
 }

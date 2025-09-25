@@ -4,10 +4,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, Trash2, Server } from 'lucide-react';
+import { Copy, Check, Trash2, Server, CircleCheck, CircleAlert, CircleX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from './ui/badge';
+import type { ValidationResult } from '@/lib/talabat-api-schemas';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface RequestLog {
   id: string;
@@ -15,7 +17,36 @@ interface RequestLog {
   headers: Record<string, string>;
   body: any;
   timestamp: string;
+  validation: ValidationResult;
 }
+
+const ValidationStatus = ({ result }: { result: ValidationResult }) => {
+  if (result.isValid) {
+    return (
+      <div className="flex items-center gap-2 text-green-600">
+        <CircleCheck className="h-4 w-4" />
+        <span className="font-semibold">Validation Successful</span>
+      </div>
+    );
+  }
+
+  if (result.requestType === 'Unknown') {
+    return (
+      <div className="flex items-center gap-2 text-yellow-600">
+        <CircleAlert className="h-4 w-4" />
+        <span className="font-semibold">Unknown Request Type</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-red-600">
+      <CircleX className="h-4 w-4" />
+      <span className="font-semibold">Validation Failed</span>
+    </div>
+  );
+};
+
 
 export function ApiSimulator() {
   const [simulatorId, setSimulatorId] = useState<string | null>(null);
@@ -24,8 +55,9 @@ export function ApiSimulator() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Generate a unique ID for the simulator session on component mount
-    setSimulatorId(Math.random().toString(36).substring(2, 15));
+    if (typeof window !== 'undefined') {
+      setSimulatorId(Math.random().toString(36).substring(2, 15));
+    }
   }, []);
 
   const endpointUrl = useMemo(() => {
@@ -48,9 +80,9 @@ export function ApiSimulator() {
       };
       setRequestLogs((prevLogs) => [newLog, ...prevLogs]);
       toast({
-        title: 'New API Request Received',
-        description: `Method: ${newLog.method}`,
-      })
+        title: `New ${newLog.validation.requestType} Request Received`,
+        description: `Validation: ${newLog.validation.isValid ? 'Success' : 'Failed'}`,
+      });
     };
 
     eventSource.onerror = (error) => {
@@ -88,9 +120,9 @@ export function ApiSimulator() {
   return (
     <Card className="max-w-4xl mx-auto mt-8">
       <CardHeader>
-        <CardTitle>API Simulator</CardTitle>
+        <CardTitle>API Simulator & Validator</CardTitle>
         <CardDescription>
-          Use the unique endpoint below to send test requests from your integration. Incoming requests will appear here in real-time.
+          Use this endpoint to test your integration. Payloads are validated against the API documentation in real-time.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -130,7 +162,7 @@ export function ApiSimulator() {
                 Clear Logs
               </Button>
             </div>
-            <div className="border rounded-md p-4 h-[400px] overflow-y-auto bg-muted/20">
+            <div className="border rounded-md p-4 h-[500px] overflow-y-auto bg-muted/20">
               {requestLogs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                   <Server className="h-10 w-10 mb-4" />
@@ -142,21 +174,58 @@ export function ApiSimulator() {
                   {requestLogs.map((log) => (
                     <AccordionItem value={log.id} key={log.id}>
                       <AccordionTrigger>
-                        <div className="flex items-center gap-4 text-sm">
-                          <Badge variant={log.method === 'POST' ? 'default' : 'secondary'}>{log.method}</Badge>
-                          <span className="font-code">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 text-sm w-full">
+                          <div className='flex items-center gap-4'>
+                            <Badge variant={log.method === 'POST' ? 'default' : 'secondary'}>{log.method}</Badge>
+                            <span className="font-code">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                          </div>
+                          <div className='flex-1 text-left'>
+                            <ValidationStatus result={log.validation} />
+                          </div>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
                         <div className="space-y-4 font-code text-xs">
+                           <div>
+                            <h4 className="font-bold mb-2 text-sm">Validation Result</h4>
+                              {!log.validation.isValid && log.validation.errors ? (
+                                <Alert variant="destructive">
+                                  <CircleAlert className="h-4 w-4" />
+                                  <AlertTitle>Request Type: {log.validation.requestType}</AlertTitle>
+                                  <AlertDescription>
+                                    <ul className="list-disc pl-5 mt-2 space-y-1">
+                                      {log.validation.errors.map((error, index) => (
+                                        <li key={index}>{error}</li>
+                                      ))}
+                                    </ul>
+                                  </AlertDescription>
+                                </Alert>
+                              ) : log.validation.requestType === 'Unknown' ? (
+                                <Alert variant="default" className='bg-yellow-50 border-yellow-200 text-yellow-800'>
+                                   <CircleAlert className="h-4 w-4 !text-yellow-800" />
+                                   <AlertTitle>Could not determine request type.</AlertTitle>
+                                   <AlertDescription>
+                                    Ensure your payload contains identifying fields like `orderId` for orders or `menu` for menu pushes.
+                                   </AlertDescription>
+                                </Alert>
+                              ) : (
+                                <Alert variant="default" className='bg-green-50 border-green-200 text-green-800'>
+                                  <CircleCheck className="h-4 w-4 !text-green-800" />
+                                  <AlertTitle>Request Valid</AlertTitle>
+                                  <AlertDescription>
+                                    The payload for this <span className='font-bold'>{log.validation.requestType}</span> request is correctly structured.
+                                  </AlertDescription>
+                                </Alert>
+                              )}
+                          </div>
                           <div>
-                            <h4 className="font-bold mb-2">Headers</h4>
+                            <h4 className="font-bold mb-2 text-sm">Headers</h4>
                             <pre className="p-2 bg-muted rounded-md whitespace-pre-wrap break-all">
                               {JSON.stringify(log.headers, null, 2)}
                             </pre>
                           </div>
                           <div>
-                            <h4 className="font-bold mb-2">Body</h4>
+                            <h4 className="font-bold mb-2 text-sm">Body</h4>
                             <pre className="p-2 bg-muted rounded-md whitespace-pre-wrap break-all">
                               {JSON.stringify(log.body, null, 2)}
                             </pre>
