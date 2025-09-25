@@ -5,45 +5,47 @@
 
 import { validateRequest, ValidationResult } from '@/lib/talabat-api-schemas';
 
+type Client = {
+  controller: ReadableStreamDefaultController<any>;
+};
+
 // A simple in-memory store for clients.
 // In a real app, you'd use a database or a pub/sub system.
-const clients = new Map<string, Response[]>();
+const clients = new Map<string, Client[]>();
 
 function sendEvent(id: string, data: any) {
-  const clientResponses = clients.get(id);
-  if (clientResponses) {
+  const clientConnections = clients.get(id);
+  if (clientConnections) {
     const eventString = `data: ${JSON.stringify(data)}\n\n`;
-    clientResponses.forEach((res) => {
-      // It's a bit of a hack to access the underlying stream controller,
-      // but it's necessary for this simple implementation.
-      const controller = (res as any).controller;
-      if (controller) {
-        try {
-          controller.enqueue(new TextEncoder().encode(eventString));
-        } catch (e) {
-          // Client disconnected
-          removeClient(id, res);
-        }
+    const encoder = new TextEncoder();
+    const encodedEvent = encoder.encode(eventString);
+
+    clientConnections.forEach((client) => {
+      try {
+        client.controller.enqueue(encodedEvent);
+      } catch (e) {
+        // Client disconnected
+        removeClient(id, client);
       }
     });
   }
 }
 
-function addClient(id: string, res: Response) {
+function addClient(id: string, client: Client) {
   if (!clients.has(id)) {
     clients.set(id, []);
   }
-  clients.get(id)?.push(res);
+  clients.get(id)?.push(client);
 }
 
-function removeClient(id: string, res: Response) {
-  const clientResponses = clients.get(id);
-  if (clientResponses) {
-    const index = clientResponses.indexOf(res);
+function removeClient(id: string, clientToRemove: Client) {
+  const clientConnections = clients.get(id);
+  if (clientConnections) {
+    const index = clientConnections.findIndex(client => client.controller === clientToRemove.controller);
     if (index !== -1) {
-      clientResponses.splice(index, 1);
+      clientConnections.splice(index, 1);
     }
-    if (clientResponses.length === 0) {
+    if (clientConnections.length === 0) {
       clients.delete(id);
     }
   }
@@ -57,22 +59,16 @@ export async function GET(
 
   const stream = new ReadableStream({
     start(controller) {
-      const response = new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      });
-      // A bit of a hack to attach the controller to the response
-      // so we can use it later to send events.
-      (response as any).controller = controller;
-
-      addClient(id, response);
+      const client = { controller };
+      addClient(id, client);
 
       request.signal.addEventListener('abort', () => {
-        removeClient(id, response);
-        controller.close();
+        removeClient(id, client);
+        try {
+          controller.close();
+        } catch (e) {
+          // Ignore errors from closing an already closed stream
+        }
       });
     },
   });
