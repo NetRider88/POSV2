@@ -17,12 +17,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <ClientOnly>
-        <body className={cn('font-body antialiased')}>
+      <body className={cn('font-body antialiased')}>
+        <ClientOnly>
           {children}
           <Toaster />
-        </body>
-      </ClientOnly>
+        </ClientOnly>
+      </body>
     </html>
   );
 }
