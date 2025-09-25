@@ -1,18 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 
-type BodyProps = {
-  children: React.ReactNode;
-  className?: string;
-};
-
-export function Body({ children, className }: BodyProps) {
-  const [isClient, setIsClient] = useState(false);
+export default function ClientOnly({ children }: { children: ReactNode }) {
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
+    setHasMounted(true);
   }, []);
 
-  return <body className={className}>{isClient ? children : null}</body>;
+  if (!hasMounted) {
+    return null;
+  }
+
+  return <>{children}</>;
 }
