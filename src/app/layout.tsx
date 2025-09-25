@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
+import { Body } from '@/components/body';
 
 export const metadata: Metadata = {
   title: 'Talabat Test Pilot',
@@ -16,10 +17,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body className={cn('font-body antialiased')}>
+      <Body className={cn('font-body antialiased')}>
         {children}
         <Toaster />
-      </body>
+      </Body>
     </html>
   );
 }
