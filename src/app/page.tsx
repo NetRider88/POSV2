@@ -4,6 +4,7 @@ import { Configuration } from '@/components/configuration';
 import { ApiRequestGenerator } from '@/components/api-request-generator';
 import { ApiSimulator } from '@/components/api-simulator';
 import { Monitoring } from '@/components/monitoring';
+import { BookAppointment } from '@/components/book-appointment';
 
 export default function Home() {
   return (
@@ -11,11 +12,12 @@ export default function Home() {
       <Header />
       <main className="flex-1 p-4 md:p-8">
         <Tabs defaultValue="api-generator" className="w-full">
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4 max-w-3xl mx-auto h-auto sm:h-10">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-5 max-w-3xl mx-auto h-auto sm:h-10">
             <TabsTrigger value="configuration">Configuration</TabsTrigger>
             <TabsTrigger value="api-generator">API Request Generator</TabsTrigger>
             <TabsTrigger value="api-simulator">API Simulator</TabsTrigger>
             <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+            <TabsTrigger value="go-live">Go Live</TabsTrigger>
           </TabsList>
           <TabsContent value="configuration">
             <Configuration />
@@ -28,6 +30,9 @@ export default function Home() {
           </TabsContent>
           <TabsContent value="monitoring">
             <Monitoring />
+          </TabsContent>
+          <TabsContent value="go-live">
+            <BookAppointment />
           </TabsContent>
         </Tabs>
       </main>
