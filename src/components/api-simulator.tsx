@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -10,6 +11,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from './ui/badge';
 import type { ValidationResult } from '@/lib/talabat-api-schemas';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useValidation } from '@/context/ValidationContext';
+
 
 interface RequestLog {
   id: string;
@@ -53,10 +56,19 @@ export function ApiSimulator() {
   const [requestLogs, setRequestLogs] = useState<RequestLog[]>([]);
   const [isCopied, setIsCopied] = useState(false);
   const { toast } = useToast();
+  const { setMenuPushPassed, setOrderPayloadPassed } = useValidation();
+
 
   useEffect(() => {
+    // This check ensures we only generate the ID on the client-side
     if (typeof window !== 'undefined') {
-      setSimulatorId(Math.random().toString(36).substring(2, 15));
+      // Use a more robust way to get or set the ID from session storage
+      let id = sessionStorage.getItem('simulatorId');
+      if (!id) {
+        id = Math.random().toString(36).substring(2, 15);
+        sessionStorage.setItem('simulatorId', id);
+      }
+      setSimulatorId(id);
     }
   }, []);
 
@@ -73,27 +85,44 @@ export function ApiSimulator() {
     const eventSource = new EventSource(`/api/simulator/${simulatorId}`);
 
     eventSource.onmessage = (event) => {
-      const newRequest: Omit<RequestLog, 'id'> = JSON.parse(event.data);
-      const newLog: RequestLog = {
-        ...newRequest,
-        id: new Date().getTime().toString(),
-      };
-      setRequestLogs((prevLogs) => [newLog, ...prevLogs]);
-      toast({
-        title: `New ${newLog.validation.requestType} Request Received`,
-        description: `Validation: ${newLog.validation.isValid ? 'Success' : 'Failed'}`,
-      });
+      // Ignore heartbeat messages
+      if (event.data.startsWith(':')) {
+        return;
+      }
+      try {
+        const newRequest: Omit<RequestLog, 'id'> = JSON.parse(event.data);
+        const newLog: RequestLog = {
+          ...newRequest,
+          id: new Date().getTime().toString(),
+        };
+
+        if (newLog.validation.isValid) {
+            if (newLog.validation.requestType === 'Menu Push') {
+                setMenuPushPassed(true);
+            } else if (newLog.validation.requestType === 'Order Payload') {
+                setOrderPayloadPassed(true);
+            }
+        }
+
+        setRequestLogs((prevLogs) => [newLog, ...prevLogs]);
+        toast({
+          title: `New ${newLog.validation.requestType} Request Received`,
+          description: `Validation: ${newLog.validation.isValid ? 'Success' : 'Failed'}`,
+        });
+      } catch (e) {
+        console.error('Failed to parse incoming event:', e);
+      }
     };
 
     eventSource.onerror = (error) => {
       console.error('EventSource failed:', error);
-      eventSource.close();
+      // Don't close the connection here, as EventSource will attempt to reconnect automatically.
     };
 
     return () => {
       eventSource.close();
     };
-  }, [simulatorId, toast]);
+  }, [simulatorId, toast, setMenuPushPassed, setOrderPayloadPassed]);
 
   const copyToClipboard = () => {
     if (endpointUrl) {
@@ -111,9 +140,11 @@ export function ApiSimulator() {
 
   const clearLogs = () => {
     setRequestLogs([]);
+    setMenuPushPassed(false);
+    setOrderPayloadPassed(false);
     toast({
       title: 'Logs Cleared',
-      description: 'All incoming API request logs have been cleared.',
+      description: 'All incoming API request logs and test statuses have been cleared.',
     });
   };
 
@@ -150,7 +181,7 @@ export function ApiSimulator() {
               </Button>
             </div>
             <div className="text-xs text-muted-foreground mt-2">
-              This endpoint only accepts <Badge variant="secondary">POST</Badge> requests. The endpoint is valid for your current session.
+              <Badge variant="secondary">POST</Badge> requests to this endpoint will appear below. The endpoint is unique to your browser session.
             </div>
           </div>
 
