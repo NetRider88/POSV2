@@ -62,18 +62,6 @@ export function Instructions() {
               <span className="font-bold text-lg">4</span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Monitor Performance (Demo)</h3>
-              <p className="text-muted-foreground mt-1">
-                The <span className="font-semibold text-foreground">Monitoring</span> tab shows a dashboard with key performance metrics. Please note that this currently shows sample data to demonstrate the kinds of metrics you'll have access to once live.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <span className="font-bold text-lg">5</span>
-            </div>
-            <div>
               <h3 className="text-lg font-semibold">Go Live!</h3>
               <p className="text-muted-foreground mt-1">
                 Once you have passed all the required API tests, the <span className="font-semibold text-foreground">Go Live</span> tab will become available. From there, you can book an appointment with our engineering team to finalize your integration and go live.
