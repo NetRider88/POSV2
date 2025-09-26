@@ -10,10 +10,11 @@ import { ApiSimulator } from '@/components/api-simulator';
 import { Monitoring } from '@/components/monitoring';
 import { BookAppointment } from '@/components/book-appointment';
 import { ValidationProvider, useValidation } from '@/context/ValidationContext';
+import { Instructions } from '@/components/instructions';
 
 function AppTabs() {
   const { allTestsPassed } = useValidation();
-  const [activeTab, setActiveTab] = useState('configuration');
+  const [activeTab, setActiveTab] = useState('instructions');
 
   const handleTabChange = (value: string) => {
     if (value === 'go-live' && !allTestsPassed) {
@@ -25,7 +26,8 @@ function AppTabs() {
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-1 sm:grid-cols-5 max-w-3xl mx-auto h-auto sm:h-10">
+      <TabsList className="grid w-full grid-cols-1 sm:grid-cols-6 max-w-4xl mx-auto h-auto sm:h-10">
+        <TabsTrigger value="instructions">Instructions</TabsTrigger>
         <TabsTrigger value="configuration">Configuration</TabsTrigger>
         <TabsTrigger value="api-generator">API Request Generator</TabsTrigger>
         <TabsTrigger value="api-simulator">API Simulator</TabsTrigger>
@@ -34,6 +36,9 @@ function AppTabs() {
           Go Live
         </TabsTrigger>
       </TabsList>
+      <TabsContent value="instructions">
+        <Instructions />
+      </TabsContent>
       <TabsContent value="configuration">
         <Configuration />
       </TabsContent>
