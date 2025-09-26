@@ -7,6 +7,7 @@ import { validateRequest, ValidationResult } from '@/lib/talabat-api-schemas';
 
 type Client = {
   controller: ReadableStreamDefaultController<any>;
+  heartbeat: NodeJS.Timeout;
 };
 
 // A simple in-memory store for clients.
@@ -41,6 +42,7 @@ function addClient(id: string, client: Client) {
 function removeClient(id: string, clientToRemove: Client) {
   const clientConnections = clients.get(id);
   if (clientConnections) {
+    clearInterval(clientToRemove.heartbeat); // Stop the heartbeat
     const index = clientConnections.findIndex(client => client.controller === clientToRemove.controller);
     if (index !== -1) {
       clientConnections.splice(index, 1);
@@ -59,7 +61,19 @@ export async function GET(
 
   const stream = new ReadableStream({
     start(controller) {
-      const client = { controller };
+       // Send a comment to keep the connection alive
+      const heartbeat = setInterval(() => {
+        const comment = new TextEncoder().encode(': heartbeat\n\n');
+        try {
+          controller.enqueue(comment);
+        } catch (e) {
+          // If we can't send a heartbeat, the client is gone.
+          clearInterval(heartbeat);
+          try { controller.close(); } catch {}
+        }
+      }, 5000); // every 5 seconds
+
+      const client = { controller, heartbeat };
       addClient(id, client);
 
       request.signal.addEventListener('abort', () => {
