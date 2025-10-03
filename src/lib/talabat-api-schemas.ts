@@ -1,29 +1,20 @@
 import { z } from 'zod';
 
-// Schema for a single menu item
-const menuItemSchema = z.object({
-  id: z.string().min(1, 'Item ID cannot be empty.'),
-  name: z.string().min(1, 'Item name cannot be empty.'),
-  description: z.string().optional(),
-  price: z.number().positive('Price must be a positive number.'),
-  imageUrl: z.string().url('Image URL must be a valid URL.').optional(),
-});
+// Base schema for menu items, categories, etc. within the 'items' object
+const itemSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  title: z.object({
+    default: z.string().nullable(),
+  }).optional(),
+  // Allow other properties as they vary between item types
+}).passthrough();
 
-// Schema for a menu category
-const categorySchema = z.object({
-  id: z.string().min(1, 'Category ID cannot be empty.'),
-  name: z.string().min(1, 'Category name cannot be empty.'),
-  items: z.array(menuItemSchema).min(1, 'Category must have at least one item.'),
-});
-
-// Schema for the entire menu payload
+// Schema for the entire menu payload, focusing on the top-level 'items' key
 const menuPushSchema = z.object({
-  menu: z.object({
-    id: z.string().min(1, 'Menu ID cannot be empty.'),
-    name: z.string().min(1, 'Menu name cannot be empty.'),
-    categories: z.array(categorySchema).min(1, 'Menu must have at least one category.'),
-  }),
+  items: z.record(itemSchema),
 });
+
 
 // Schema for an order item
 const orderItemSchema = z.object({
@@ -53,8 +44,8 @@ export type ValidationResult = {
 
 // Function to validate a request body against the schemas
 export function validateRequest(body: any): ValidationResult {
-  // Try to identify and validate as a Menu Push
-  if (body && body.menu) {
+  // Try to identify and validate as a Menu Push by checking for the 'items' key
+  if (body && body.items) {
     const result = menuPushSchema.safeParse(body);
     if (result.success) {
       return { isValid: true, requestType: 'Menu Push', errors: null };
@@ -83,6 +74,6 @@ export function validateRequest(body: any): ValidationResult {
   return {
     isValid: false,
     requestType: 'Unknown',
-    errors: ['Could not determine the request type. Ensure the payload has a `menu` or `orderId` top-level key.'],
+    errors: ['Could not determine the request type. Ensure the payload has an `items` or `orderId` top-level key.'],
   };
 }
