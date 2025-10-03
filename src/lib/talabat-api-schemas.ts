@@ -18,7 +18,7 @@ const menuSchema = z.object({
     menuType: z.enum(['DELIVERY', 'DINE_IN', 'PICK_UP'], {
         errorMap: () => ({ message: 'Invalid menuType. Must be one of: DELIVERY, DINE_IN, PICK_UP' })
     }),
-    products: z.record(itemReferenceSchema).min(1, {message: "Menu must contain at least one product."}),
+    products: z.record(itemReferenceSchema).refine((products) => Object.keys(products).length > 0, {message: "Menu must contain at least one product."}),
     schedule: z.record(itemReferenceSchema).optional(),
 }).passthrough();
 

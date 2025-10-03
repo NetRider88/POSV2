@@ -3,7 +3,7 @@ import type {NextConfig} from 'next';
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
-    allowedDevOrigins: ['**.cloudworkstations.dev'],
+    // allowedDevOrigins removed - not a valid Next.js config option
   },
   typescript: {
     ignoreBuildErrors: true,
