@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Header } from '@/components/header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Configuration } from '@/components/configuration';
-import { ApiRequestGenerator } from '@/components/api-request-generator';
 import { ApiSimulator } from '@/components/api-simulator';
 import { BookAppointment } from '@/components/book-appointment';
 import { ValidationProvider, useValidation } from '@/context/ValidationContext';
@@ -25,10 +24,9 @@ function AppTabs() {
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid w-full grid-cols-1 sm:grid-cols-5 max-w-4xl mx-auto h-auto sm:h-10">
+      <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4 max-w-4xl mx-auto h-auto sm:h-10">
         <TabsTrigger value="instructions">Instructions</TabsTrigger>
         <TabsTrigger value="configuration">Configuration</TabsTrigger>
-        <TabsTrigger value="api-generator">API Request Generator</TabsTrigger>
         <TabsTrigger value="api-simulator">API Simulator</TabsTrigger>
         <TabsTrigger value="go-live" disabled={!allTestsPassed}>
           Go Live
@@ -39,9 +37,6 @@ function AppTabs() {
       </TabsContent>
       <TabsContent value="configuration">
         <Configuration />
-      </TabsContent>
-      <TabsContent value="api-generator">
-        <ApiRequestGenerator />
       </TabsContent>
       <TabsContent value="api-simulator">
         <ApiSimulator />

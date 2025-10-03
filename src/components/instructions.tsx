@@ -19,9 +19,9 @@ export function Instructions() {
               <span className="font-bold text-lg">1</span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold">Generate API Requests with AI</h3>
+              <h3 className="text-lg font-semibold">Configure Your Endpoint</h3>
               <p className="text-muted-foreground mt-1">
-                Navigate to the <span className="font-semibold text-foreground">API Request Generator</span> tab. Describe a test scenario in plain English (e.g., "a new order with two items"). Our AI will generate a valid JSON API request payload for you. This is a great way to understand the expected request structure.
+                Navigate to the <span className="font-semibold text-foreground">Configuration</span> tab to enter and save your POS integration details. This step is for your reference and helps keep your information organized.
               </p>
             </div>
           </div>
@@ -33,7 +33,7 @@ export function Instructions() {
             <div>
               <h3 className="text-lg font-semibold">Test Your Integration</h3>
               <p className="text-muted-foreground mt-1">
-                Go to the <span className="font-semibold text-foreground">API Simulator</span> tab. You'll find a unique endpoint URL. Configure your POS system to send `POST` requests to this URL. All incoming requests will appear in real-time.
+                Go to the <span className="font-semibold text-foreground">API Simulator</span> tab. You'll find a unique endpoint URL. Configure your POS system to send `POST` requests for Menu Pushes and Order Payloads to this URL. All incoming requests will appear in real-time.
               </p>
             </div>
           </div>
