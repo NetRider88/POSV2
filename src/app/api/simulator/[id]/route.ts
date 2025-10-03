@@ -101,14 +101,26 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
-  let body: any;
+  let rawBody: any;
   let validationResult: ValidationResult;
 
   try {
-    body = await request.json();
-    validationResult = validateRequest(body);
+    rawBody = await request.json();
+    let bodyToValidate = rawBody;
+
+    // If the body is a string, it might be stringified JSON.
+    // This happens with the AI generator. Let's try parsing it.
+    if (typeof rawBody === 'string') {
+        try {
+            bodyToValidate = JSON.parse(rawBody);
+        } catch(e) {
+            // It wasn't a valid JSON string, proceed with the raw string
+        }
+    }
+    
+    validationResult = validateRequest(bodyToValidate);
   } catch (e) {
-    body = { error: "Invalid JSON in request body" };
+    rawBody = { error: "Invalid JSON in request body" };
     validationResult = {
       isValid: false,
       requestType: 'Unknown',
@@ -124,7 +136,7 @@ export async function POST(
   const requestData = {
     method: request.method,
     headers,
-    body,
+    body: rawBody, // Log the original raw body
     timestamp: new Date().toISOString(),
     validation: validationResult,
   };

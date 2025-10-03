@@ -147,6 +147,21 @@ export function ApiSimulator() {
       description: 'All incoming API request logs and test statuses have been cleared.',
     });
   };
+  
+  const getBodyForDisplay = (body: any) => {
+    if (typeof body === 'string') {
+      try {
+        // It's a JSON string, so parse and re-stringify for pretty printing
+        return JSON.stringify(JSON.parse(body), null, 2);
+      } catch (e) {
+        // It's just a regular string, return as is
+        return body;
+      }
+    }
+    // It's already a JSON object
+    return JSON.stringify(body, null, 2);
+  };
+
 
   return (
     <Card className="max-w-4xl mx-auto mt-8">
@@ -258,7 +273,7 @@ export function ApiSimulator() {
                           <div>
                             <h4 className="font-bold mb-2 text-sm">Body</h4>
                             <pre className="p-2 bg-muted rounded-md whitespace-pre-wrap break-all">
-                              {JSON.stringify(log.body, null, 2)}
+                              {getBodyForDisplay(log.body)}
                             </pre>
                           </div>
                         </div>
