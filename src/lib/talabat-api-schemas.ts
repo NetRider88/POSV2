@@ -1,18 +1,59 @@
 import { z } from 'zod';
 
-// Base schema for menu items, categories, etc. within the 'items' object
-const itemSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  title: z.object({
-    default: z.string().nullable(),
-  }).optional(),
-  // Allow other properties as they vary between item types
+// Shared schema for localized strings (e.g., title, description)
+const localizedStringSchema = z.object({
+  default: z.string().min(1, { message: 'Default translation is required.' }),
+}).catchall(z.string());
+
+// Schema for a reference to another item (e.g., Product in a Menu)
+const itemReferenceSchema = z.object({
+    id: z.string(),
+    type: z.string(),
+});
+
+// Schema for a Menu item
+const menuSchema = z.object({
+    type: z.literal('Menu'),
+    title: localizedStringSchema,
+    menuType: z.enum(['DELIVERY', 'DINE_IN', 'PICK_UP'], {
+        errorMap: () => ({ message: 'Invalid menuType. Must be one of: DELIVERY, DINE_IN, PICK_UP' })
+    }),
+    products: z.record(itemReferenceSchema).min(1, {message: "Menu must contain at least one product."}),
+    schedule: z.record(itemReferenceSchema).optional(),
 }).passthrough();
+
+
+// Schema for a Product item
+const productSchema = z.object({
+    type: z.literal('Product'),
+    title: localizedStringSchema,
+    price: z.string().min(1, {message: "Product must have a price."}),
+    description: localizedStringSchema.optional(),
+    images: z.record(itemReferenceSchema).optional(),
+    active: z.boolean().optional().default(true),
+    toppings: z.record(itemReferenceSchema).optional(),
+}).passthrough();
+
+// Schemas for other item types (can be expanded later)
+const categorySchema = z.object({ type: z.literal('Category') }).passthrough();
+const toppingSchema = z.object({ type: z.literal('Topping') }).passthrough();
+const imageSchema = z.object({ type: z.literal('Image') }).passthrough();
+const scheduleEntrySchema = z.object({ type: z.literal('ScheduleEntry') }).passthrough();
+
+
+// A discriminated union to validate any given item based on its 'type' field
+const anyItemSchema = z.discriminatedUnion('type', [
+  menuSchema,
+  productSchema,
+  categorySchema,
+  toppingSchema,
+  imageSchema,
+  scheduleEntrySchema,
+]);
 
 // Schema for the entire menu payload, focusing on the top-level 'items' key
 const menuPushSchema = z.object({
-  items: z.record(itemSchema),
+  items: z.record(anyItemSchema),
 });
 
 
@@ -45,7 +86,7 @@ export type ValidationResult = {
 // Function to validate a request body against the schemas
 export function validateRequest(body: any): ValidationResult {
   // Try to identify and validate as a Menu Push by checking for the 'items' key
-  if (body && body.items) {
+  if (body && body.items && typeof body.items === 'object' && !body.orderId) {
     const result = menuPushSchema.safeParse(body);
     if (result.success) {
       return { isValid: true, requestType: 'Menu Push', errors: null };
