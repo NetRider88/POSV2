@@ -35,8 +35,10 @@ export function ApiRequestGenerator() {
   const formattedRequest = useMemo(() => {
     if (!generatedRequest) return null;
     try {
+      // The generatedRequest is now a stringified JSON, so we parse and re-stringify with formatting.
       return JSON.stringify(JSON.parse(generatedRequest), null, 2);
     } catch (e) {
+      // Fallback for cases where it might not be perfect JSON
       return generatedRequest;
     }
   }, [generatedRequest]);
@@ -49,7 +51,7 @@ export function ApiRequestGenerator() {
         scenarioDescription: values.scenarioDescription,
       };
       const result = await generateApiRequest(input);
-      setGeneratedRequest(result.api_request);
+      setGeneratedRequest(result);
     } catch (error) {
       console.error('Error generating API request:', error);
       toast({

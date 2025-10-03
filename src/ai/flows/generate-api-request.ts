@@ -18,11 +18,9 @@ const GenerateApiRequestInputSchema = z.object({
 });
 export type GenerateApiRequestInput = z.infer<typeof GenerateApiRequestInputSchema>;
 
-const GenerateApiRequestOutputSchema = z.object({
-  api_request: z
-    .string()
-    .describe('A valid API request, with parameters, for the specified scenario.'),
-});
+const GenerateApiRequestOutputSchema = z
+  .string()
+  .describe('A valid API request, with parameters, for the specified scenario.');
 export type GenerateApiRequestOutput = z.infer<typeof GenerateApiRequestOutputSchema>;
 
 export async function generateApiRequest(
@@ -34,15 +32,15 @@ export async function generateApiRequest(
 const prompt = ai.definePrompt({
   name: 'generateApiRequestPrompt',
   input: {schema: GenerateApiRequestInputSchema},
-  output: {schema: GenerateApiRequestOutputSchema},
+  output: {format: 'json'},
   prompt: `You are an API request generator for the Talabat POS integration.
 
   Based on the scenario description provided, generate a valid API request, including the correct parameters, to test the specified scenario against the Talabat POSMW endpoints.
 
   Scenario Description: {{{scenarioDescription}}}
 
-  Ensure that the generated API request is a valid JSON and includes all necessary headers and parameters.
-  The API request should be executable as is. Do not include code fences, only the raw JSON.
+  Ensure that the generated API request is a valid JSON. The entire output should be the JSON object itself.
+  Do not include any wrapping text, explanations, or code fences like \`\`\`json. Only output the raw JSON.
   `,
 });
 
@@ -54,6 +52,7 @@ const generateApiRequestFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    // The output from the LLM is a JSON object. We need to stringify it to send it to the client.
+    return JSON.stringify(output);
   }
 );
