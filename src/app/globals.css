@@ -6,22 +6,22 @@
 
 @layer base {
   :root {
-    --background: 210 29% 97%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 210 40% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 210 40% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 224 100% 58%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 174 63% 38%;
-    --accent-foreground: 355.7 100% 97.3%;
+    --background: 37 50% 96%; /* Talabat off-white #F4EDE3 */
+    --foreground: 355 60% 12%; /* Talabat brown #411517 */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 355 60% 12%; /* Talabat brown */
+    --popover: 0 0% 100%;
+    --popover-foreground: 355 60% 12%;
+    --primary: 18 100% 50%; /* Talabat orange #FF5900 */
+    --primary-foreground: 0 0% 100%; /* White text on orange */
+    --secondary: 355 60% 12%; /* Talabat brown */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 37 50% 96%; /* Off-white */
+    --muted-foreground: 355 30% 40%;
+    --accent: 74 100% 59%; /* Talabat lime #CFFF00 */
+    --accent-foreground: 355 60% 12%; /* Brown text on lime */
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 224 100% 58%;

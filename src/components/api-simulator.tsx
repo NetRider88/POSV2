@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Copy, Check, Trash2, Server, CircleCheck, CircleAlert, CircleX } from 'lucide-react';
+import { Copy, Check, Trash2, Server, CircleCheck, CircleAlert, CircleX, Lightbulb, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from './ui/badge';
@@ -26,7 +26,7 @@ interface RequestLog {
 const ValidationStatus = ({ result }: { result: ValidationResult }) => {
   if (result.isValid) {
     return (
-      <div className="flex items-center gap-2 text-green-600">
+      <div className="flex items-center gap-2 text-talabat-orange">
         <CircleCheck className="h-4 w-4" />
         <span className="font-semibold">Validation Successful</span>
       </div>
@@ -35,7 +35,7 @@ const ValidationStatus = ({ result }: { result: ValidationResult }) => {
 
   if (result.requestType === 'Unknown') {
     return (
-      <div className="flex items-center gap-2 text-yellow-600">
+      <div className="flex items-center gap-2 text-amber-600">
         <CircleAlert className="h-4 w-4" />
         <span className="font-semibold">Unknown Request Type</span>
       </div>
@@ -188,11 +188,11 @@ export function ApiSimulator() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-1/2 right-1 -translate-y-1/2 h-7 w-7"
+                className="absolute top-1/2 right-1 -translate-y-1/2 h-7 w-7 hover:bg-talabat-orange/10"
                 onClick={copyToClipboard}
                 aria-label="Copy endpoint URL"
               >
-                {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                {isCopied ? <Check className="h-4 w-4 text-talabat-orange" /> : <Copy className="h-4 w-4" />}
               </Button>
             </div>
             <div className="text-xs text-muted-foreground mt-2">
@@ -235,31 +235,97 @@ export function ApiSimulator() {
                            <div>
                             <h4 className="font-bold mb-2 text-sm">Validation Result</h4>
                               {!log.validation.isValid && log.validation.errors ? (
-                                <Alert variant="destructive">
-                                  <CircleAlert className="h-4 w-4" />
-                                  <AlertTitle>Request Type: {log.validation.requestType}</AlertTitle>
-                                  <AlertDescription>
-                                    <ul className="list-disc pl-5 mt-2 space-y-1">
-                                      {log.validation.errors.map((error, index) => (
-                                        <li key={index}>{error}</li>
+                                <div className="space-y-4">
+                                  <Alert variant="destructive">
+                                    <CircleAlert className="h-4 w-4" />
+                                    <AlertTitle>Request Type: {log.validation.requestType}</AlertTitle>
+                                    <AlertDescription>
+                                      Found {log.validation.errors.length} validation error{log.validation.errors.length > 1 ? 's' : ''}
+                                    </AlertDescription>
+                                  </Alert>
+                                  
+                                  {log.validation.detailedErrors && log.validation.detailedErrors.length > 0 ? (
+                                    <div className="space-y-3">
+                                      {log.validation.detailedErrors.map((error, index) => (
+                                        <div key={index} className="border border-red-200 rounded-lg p-4 bg-red-50/50 space-y-3">
+                                          <div className="flex items-start gap-2">
+                                            <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                            <div className="flex-1 space-y-2">
+                                              <div>
+                                                <span className="font-semibold text-talabat-brown">Field:</span>{' '}
+                                                <code className="bg-red-100 px-2 py-0.5 rounded text-talabat-brown font-mono text-xs">
+                                                  {error.path}
+                                                </code>
+                                              </div>
+                                              <div>
+                                                <span className="font-semibold text-talabat-brown">Error:</span>{' '}
+                                                <span className="text-red-800">{error.message}</span>
+                                              </div>
+                                              {error.received && (
+                                                <div>
+                                                  <span className="font-semibold text-talabat-brown">Received:</span>{' '}
+                                                  <code className="bg-red-100 px-2 py-0.5 rounded text-talabat-brown font-mono text-xs">
+                                                    {typeof error.received === 'object' ? JSON.stringify(error.received) : String(error.received)}
+                                                  </code>
+                                                </div>
+                                              )}
+                                              {error.expected && (
+                                                <div>
+                                                  <span className="font-semibold text-talabat-brown">Expected:</span>{' '}
+                                                  <code className="bg-talabat-lime/30 px-2 py-0.5 rounded text-talabat-brown font-mono text-xs border border-talabat-lime/50">
+                                                    {error.expected}
+                                                  </code>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                          
+                                          {error.fixSuggestion && (
+                                            <div className="flex items-start gap-2 mt-3 pt-3 border-t border-talabat-orange/20">
+                                              <Lightbulb className="h-4 w-4 text-talabat-orange mt-0.5 flex-shrink-0" />
+                                              <div>
+                                                <span className="font-semibold text-talabat-orange">How to fix:</span>{' '}
+                                                <span className="text-talabat-brown">{error.fixSuggestion}</span>
+                                              </div>
+                                            </div>
+                                          )}
+                                          
+                                          {error.errorCode && (
+                                            <div className="mt-2">
+                                              <Badge variant="outline" className="text-xs font-mono bg-white border-talabat-brown/20 text-talabat-brown">
+                                                {error.errorCode}
+                                              </Badge>
+                                            </div>
+                                          )}
+                                        </div>
                                       ))}
-                                    </ul>
-                                  </AlertDescription>
-                                </Alert>
+                                    </div>
+                                  ) : (
+                                    <Alert variant="destructive">
+                                      <AlertDescription>
+                                        <ul className="list-disc pl-5 mt-2 space-y-1">
+                                          {log.validation.errors.map((error, index) => (
+                                            <li key={index}>{error}</li>
+                                          ))}
+                                        </ul>
+                                      </AlertDescription>
+                                    </Alert>
+                                  )}
+                                </div>
                               ) : log.validation.requestType === 'Unknown' ? (
-                                <Alert variant="default" className='bg-yellow-50 border-yellow-200 text-yellow-800'>
-                                   <CircleAlert className="h-4 w-4 !text-yellow-800" />
+                                <Alert variant="default" className='bg-amber-50 border-amber-200 text-amber-900'>
+                                   <CircleAlert className="h-4 w-4 !text-amber-600" />
                                    <AlertTitle>Could not determine request type.</AlertTitle>
                                    <AlertDescription>
-                                    Ensure your payload contains identifying fields like `orderId` for orders or `menu` for menu pushes.
+                                    Ensure your payload contains identifying fields like `orderId` for orders or `items` for menu pushes.
                                    </AlertDescription>
                                 </Alert>
                               ) : (
-                                <Alert variant="default" className='bg-green-50 border-green-200 text-green-800'>
-                                  <CircleCheck className="h-4 w-4 !text-green-800" />
-                                  <AlertTitle>Request Valid</AlertTitle>
-                                  <AlertDescription>
-                                    The payload for this <span className='font-bold'>{log.validation.requestType}</span> request is correctly structured.
+                                <Alert variant="default" className='bg-talabat-lime/20 border-talabat-orange text-talabat-brown'>
+                                  <CircleCheck className="h-4 w-4 !text-talabat-orange" />
+                                  <AlertTitle className="text-talabat-brown">Request Valid</AlertTitle>
+                                  <AlertDescription className="text-talabat-brown">
+                                    The payload for this <span className='font-bold text-talabat-orange'>{log.validation.requestType}</span> request is correctly structured.
                                   </AlertDescription>
                                 </Alert>
                               )}

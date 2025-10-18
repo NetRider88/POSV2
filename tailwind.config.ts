@@ -15,6 +15,12 @@ export default {
         code: ['"Source Code Pro"', 'monospace'],
       },
       colors: {
+        talabat: {
+          orange: '#FF5900',
+          brown: '#411517',
+          offwhite: '#F4EDE3',
+          lime: '#CFFF00',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {
