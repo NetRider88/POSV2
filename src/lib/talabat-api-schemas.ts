@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validateImageUrl, TALABAT_IMAGE_CRITERIA, type ImageValidationCriteria } from './image-validator';
 
 // Shared schema for localized strings (e.g., title, description)
 const localizedStringSchema = z.object({
@@ -307,4 +308,160 @@ export function validateRequest(body: any): ValidationResult {
     errors: ['Could not determine the request type. Ensure the payload has an `items` or `orderId` top-level key.'],
     errorCodes: ['UNKNOWN_REQUEST_TYPE']
   };
+}
+
+/**
+ * Validates image dimensions for all images in a menu push payload
+ * This is an async validation that should be called after schema validation
+ */
+export async function validateImageDimensions(
+  body: any,
+  criteria: ImageValidationCriteria = TALABAT_IMAGE_CRITERIA.product
+): Promise<ValidationResult> {
+  const errors: string[] = [];
+  const errorCodes: string[] = [];
+  const detailedErrors: ValidationError[] = [];
+
+  // Only validate Menu Push payloads
+  if (!body || !body.items || typeof body.items !== 'object') {
+    return {
+      isValid: true,
+      requestType: 'Unknown',
+      errors: null,
+    };
+  }
+
+  // Extract all image URLs from the payload (excluding logos)
+  const imageUrls: Array<{ url: string; path: string }> = [];
+
+  // Patterns to identify logo images (case-insensitive)
+  const logoPatterns = [
+    /logo/i,
+    /restaurant.*image/i,
+    /store.*image/i,
+    /brand/i,
+    /icon/i,
+  ];
+
+  for (const [itemId, item] of Object.entries(body.items)) {
+    if (item && typeof item === 'object' && 'type' in item) {
+      // Check if this is an Image type
+      if (item.type === 'Image' && 'url' in item && typeof item.url === 'string') {
+        // Check if this is a logo image
+        const isLogo = logoPatterns.some(pattern => {
+          // Check item ID
+          if (pattern.test(itemId)) return true;
+          
+          // Check alt text if available
+          const itemWithAlt = item as any;
+          if (itemWithAlt.alt && typeof itemWithAlt.alt === 'object') {
+            const altValues = Object.values(itemWithAlt.alt);
+            return altValues.some(altText => 
+              typeof altText === 'string' && pattern.test(altText)
+            );
+          }
+          
+          return false;
+        });
+
+        // Only validate non-logo images
+        if (!isLogo) {
+          imageUrls.push({
+            url: item.url,
+            path: `items.${itemId}.url`,
+          });
+        }
+      }
+    }
+  }
+
+  // If no images found, return valid
+  if (imageUrls.length === 0) {
+    return {
+      isValid: true,
+      requestType: 'Menu Push',
+      errors: null,
+    };
+  }
+
+  // Validate each image
+  const validationPromises = imageUrls.map(async ({ url, path }) => {
+    try {
+      const result = await validateImageUrl(url, criteria);
+      
+      if (!result.isValid) {
+        result.errors.forEach((error) => {
+          errors.push(`[${path}] ${error}`);
+          errorCodes.push('INVALID_IMAGE_DIMENSIONS');
+          detailedErrors.push({
+            path,
+            message: error,
+            errorCode: 'INVALID_IMAGE_DIMENSIONS',
+            received: result.dimensions ? `${result.dimensions.width}x${result.dimensions.height}` : 'unknown',
+            expected: formatCriteriaExpectation(criteria),
+            fixSuggestion: `Ensure the image meets the required dimensions: ${formatCriteriaExpectation(criteria)}`,
+          });
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      errors.push(`[${path}] Failed to validate image: ${errorMessage}`);
+      errorCodes.push('IMAGE_VALIDATION_ERROR');
+      detailedErrors.push({
+        path,
+        message: `Failed to validate image: ${errorMessage}`,
+        errorCode: 'IMAGE_VALIDATION_ERROR',
+        fixSuggestion: 'Ensure the image URL is accessible and points to a valid image file.',
+      });
+    }
+  });
+
+  await Promise.all(validationPromises);
+
+  return {
+    isValid: errors.length === 0,
+    requestType: 'Menu Push',
+    errors: errors.length > 0 ? errors : null,
+    errorCodes,
+    detailedErrors: detailedErrors.length > 0 ? detailedErrors : undefined,
+  };
+}
+
+/**
+ * Helper function to format criteria into a readable expectation string
+ */
+function formatCriteriaExpectation(criteria: ImageValidationCriteria): string {
+  const parts: string[] = [];
+
+  if (criteria.minWidth || criteria.maxWidth) {
+    const widthRange = criteria.minWidth && criteria.maxWidth
+      ? `${criteria.minWidth}-${criteria.maxWidth}px wide`
+      : criteria.minWidth
+      ? `at least ${criteria.minWidth}px wide`
+      : `at most ${criteria.maxWidth}px wide`;
+    parts.push(widthRange);
+  }
+
+  if (criteria.minHeight || criteria.maxHeight) {
+    const heightRange = criteria.minHeight && criteria.maxHeight
+      ? `${criteria.minHeight}-${criteria.maxHeight}px tall`
+      : criteria.minHeight
+      ? `at least ${criteria.minHeight}px tall`
+      : `at most ${criteria.maxHeight}px tall`;
+    parts.push(heightRange);
+  }
+
+  if (criteria.maxArea) {
+    parts.push(`max area ${criteria.maxArea}Mpx²`);
+  }
+
+  if (criteria.aspectRatio) {
+    parts.push(`aspect ratio ${criteria.aspectRatio.toFixed(2)}`);
+  }
+
+  if (criteria.maxFileSize) {
+    parts.push(`max ${(criteria.maxFileSize / 1024 / 1024).toFixed(0)}MB`);
+  }
+
+  return parts.join(', ');
 }
